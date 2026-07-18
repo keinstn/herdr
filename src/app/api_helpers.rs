@@ -10,7 +10,13 @@ pub(super) fn tab_attention_priority(state: crate::detect::AgentState, seen: boo
 
 fn parse_api_key(key: &str) -> Option<crossterm::event::KeyEvent> {
     let normalized = normalize_api_key_alias(key.trim());
-    let (code, modifiers) = crate::config::parse_key_combo(normalized)?;
+    let (code, mut modifiers) = crate::config::parse_key_combo(normalized)?;
+    // BackTab means shift+tab, and every other entry point keeps that SHIFT
+    // (see input::parse for "\x1b[Z"). parse_key_combo drops it, so restore it
+    // here or the key encoder emits a bare Tab instead of shift+tab.
+    if code == crossterm::event::KeyCode::BackTab {
+        modifiers.insert(crossterm::event::KeyModifiers::SHIFT);
+    }
     Some(crossterm::event::KeyEvent::new(code, modifiers))
 }
 
